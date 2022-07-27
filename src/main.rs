@@ -1,6 +1,6 @@
 use std::{collections::HashMap, num::ParseFloatError, ptr::read};
 
-//Type Difinitions
+//Type Definitions
 #[derive(Clone)]
 enum RispExp {
     Symbol(String),

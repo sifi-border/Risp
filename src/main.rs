@@ -37,6 +37,8 @@ fn parse(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
     }
 }
 
+// reading and parsing the tokens which follows current opening parenthesis, 
+// until we hit a closing parenthesis:
 fn read_seq(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
     let mut res: Vec<RispExp> = vec![];
     let mut xs = tokens;

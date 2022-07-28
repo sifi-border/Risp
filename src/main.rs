@@ -1,4 +1,9 @@
-use std::{collections::HashMap, hash::Hash, num::ParseFloatError};
+use core::fmt;
+use std::{
+    collections::HashMap,
+    io::{self, Write},
+    num::ParseFloatError,
+};
 
 //Type Definitions
 #[derive(Clone)]
@@ -134,6 +139,52 @@ fn eval(exp: &RispExp, env: &mut RispEnv) -> Result<RispExp, RispErr> {
     }
 }
 
+// For Repl (read-eval-print-loop)
+impl fmt::Display for RispExp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let str = match self {
+            RispExp::Symbol(s) => s.clone(),
+            RispExp::Number(n) => n.to_string(),
+            RispExp::List(list) => {
+                let xs = list.iter().map(|x| x.to_string()).collect::<Vec<String>>();
+                format!("({})", xs.join(","))
+            }
+            RispExp::Func(_) => "Function {}".to_string(), //ここ呼ばれることあるんか？
+        };
+
+        write!(f, "{}", str)
+    }
+}
+
+fn parse_and_eval(expr: String, env: &mut RispEnv) -> Result<RispExp, RispErr> {
+    let (parsed_exp, _) = parse(&tokenize(expr))?;
+    let evaled_exp = eval(&parsed_exp, env)?;
+
+    Ok(evaled_exp)
+}
+
+fn read_input_expr() -> String {
+    let mut expr = String::new();
+    io::stdin()
+        .read_line(&mut expr)
+        .expect("Failed to read line");
+    expr
+}
+
 fn main() {
-    println!("Hello, world!");
+    let env = &mut defaul_env();
+    loop {
+        print!("risp > ");
+        io::stdout().flush().unwrap(); // flush to show prompt
+        let input_expr = read_input_expr();
+        if input_expr == "quit\n".to_string() {
+            break;
+        }
+        match parse_and_eval(input_expr, env) {
+            Ok(res) => println!("// 🔥 => {}", res),
+            Err(e) => match e {
+                RispErr::Reason(msg) => println!("// 🙀 => {}", msg),
+            },
+        }
+    }
 }

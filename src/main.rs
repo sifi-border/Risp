@@ -1,4 +1,4 @@
-use std::{collections::HashMap, num::ParseFloatError};
+use std::{collections::HashMap, hash::Hash, num::ParseFloatError};
 
 //Type Definitions
 #[derive(Clone)]
@@ -6,6 +6,7 @@ enum RispExp {
     Symbol(String),
     Number(f64),
     List(Vec<RispExp>),
+    Func(fn(&[RispExp]) -> Result<RispExp, RispErr>),
 }
 #[derive(Debug)]
 enum RispErr {
@@ -37,7 +38,7 @@ fn parse(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
     }
 }
 
-// reading and parsing the tokens which follows current opening parenthesis, 
+// reading and parsing the tokens which follows current opening parenthesis,
 // until we hit a closing parenthesis:
 fn read_seq(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
     let mut res: Vec<RispExp> = vec![];
@@ -61,6 +62,46 @@ fn parse_atom(token: &str) -> RispExp {
         Ok(v) => RispExp::Number(v),
         Err(_) => RispExp::Symbol(token.to_string()),
     }
+}
+
+fn parse_list_of_floats(args: &[RispExp]) -> Result<Vec<f64>, RispErr> {
+    args.iter().map(|x| parse_single_float(x)).collect()
+}
+
+fn parse_single_float(exp: &RispExp) -> Result<f64, RispErr> {
+    match exp {
+        RispExp::Number(num) => Ok(*num),
+        _ => Err(RispErr::Reason("expected a number".to_string())),
+    }
+}
+
+// Environment
+fn defaul_env() -> RispEnv {
+    let mut data: HashMap<String, RispExp> = HashMap::new();
+    // add "+" func
+    data.insert(
+        "+".to_string(),
+        RispExp::Func(|args: &[RispExp]| -> Result<RispExp, RispErr> {
+            let sum = parse_list_of_floats(args)?
+                .iter()
+                .fold(0.0, |sum, a| sum + a);
+            Ok(RispExp::Number(sum))
+        }),
+    );
+    // add "-" func
+    data.insert(
+        "-".to_string(),
+        RispExp::Func(|args: &[RispExp]| -> Result<RispExp, RispErr> {
+            let floats = parse_list_of_floats(args)?;
+            let first = *floats
+                .first()
+                .ok_or(RispErr::Reason("expexted at least one number".to_string()))?;
+            let sum_of_rest = floats[1..].iter().fold(0.0, |sum, a| sum + a);
+            Ok(RispExp::Number(first - sum_of_rest))
+        }),
+    );
+
+    RispEnv { data }
 }
 fn main() {
     println!("Hello, world!");

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, num::ParseFloatError, ptr::read};
+use std::{collections::HashMap, num::ParseFloatError};
 
 //Type Definitions
 #[derive(Clone)]

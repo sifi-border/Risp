@@ -8,6 +8,7 @@ use std::{
 //Type Definitions
 #[derive(Clone)]
 enum RispExp {
+    Bool(bool),
     Symbol(String),
     Number(f64),
     List(Vec<RispExp>),
@@ -62,10 +63,16 @@ fn read_seq(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
 }
 
 fn parse_atom(token: &str) -> RispExp {
-    let potential_float: Result<f64, ParseFloatError> = token.parse();
-    match potential_float {
-        Ok(v) => RispExp::Number(v),
-        Err(_) => RispExp::Symbol(token.to_string()),
+    match token.as_ref() {
+        "true" => RispExp::Bool(true),
+        "false" => RispExp::Bool(false),
+        _ => {
+            let potential_float: Result<f64, ParseFloatError> = token.parse();
+            match potential_float {
+                Ok(v) => RispExp::Number(v),
+                Err(_) => RispExp::Symbol(token.to_string()),
+            }
+        }
     }
 }
 
@@ -112,6 +119,7 @@ fn defaul_env() -> RispEnv {
 //Evaluation
 fn eval(exp: &RispExp, env: &mut RispEnv) -> Result<RispExp, RispErr> {
     match exp {
+        RispExp::Bool(_a) => Ok(exp.clone()),
         RispExp::Symbol(k) => env
             .data
             .get(k)
@@ -143,6 +151,7 @@ fn eval(exp: &RispExp, env: &mut RispEnv) -> Result<RispExp, RispErr> {
 impl fmt::Display for RispExp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str = match self {
+            RispExp::Bool(a) => a.to_string(),
             RispExp::Symbol(s) => s.clone(),
             RispExp::Number(n) => n.to_string(),
             RispExp::List(list) => {
@@ -191,7 +200,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use crate::{defaul_env, parse_and_eval, tokenize, RispExp};
+    use crate::tokenize;
 
     #[test]
     fn tokenize_check() {

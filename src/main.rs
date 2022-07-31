@@ -188,3 +188,16 @@ fn main() {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{defaul_env, parse_and_eval, tokenize, RispExp};
+
+    #[test]
+    fn tokenize_check() {
+        assert_eq!(
+            tokenize("(+ 10 5)".to_string()),
+            vec!["(", "+", "10", "5", ")"]
+        )
+    }
+}

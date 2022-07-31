@@ -88,7 +88,7 @@ fn parse_single_float(exp: &RispExp) -> Result<f64, RispErr> {
 }
 
 // Environment
-fn defaul_env() -> RispEnv {
+fn default_env() -> RispEnv {
     let mut data: HashMap<String, RispExp> = HashMap::new();
     // add "+" func
     data.insert(
@@ -181,7 +181,7 @@ fn read_input_expr() -> String {
 }
 
 fn main() {
-    let env = &mut defaul_env();
+    let env = &mut default_env();
     loop {
         print!("risp > ");
         io::stdout().flush().unwrap(); // flush to show prompt

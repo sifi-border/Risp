@@ -88,6 +88,26 @@ fn parse_single_float(exp: &RispExp) -> Result<f64, RispErr> {
 }
 
 // Environment
+
+macro_rules! ensure_tonicity {
+    ($check_fn:expr) => {{
+        |args: &[RispExp]| -> Result<RispExp, RispErr> {
+            let floats = parse_list_of_floats(args)?;
+            let first = floats
+                .first()
+                .ok_or(RispErr::Reason("expected at least one number".to_string()))?;
+            let rest = &floats[1..];
+            fn f(prev: &f64, xs: &[f64]) -> bool {
+                match xs.first() {
+                    Some(x) => $check_fn(prev, x) && f(x, &xs[1..]),
+                    None => true,
+                }
+            };
+            Ok(RispExp::Bool(f(first, rest)))
+        }
+    }};
+}
+
 fn default_env() -> RispEnv {
     let mut data: HashMap<String, RispExp> = HashMap::new();
     // add "+" func
@@ -111,6 +131,28 @@ fn default_env() -> RispEnv {
             let sum_of_rest = floats[1..].iter().fold(0.0, |sum, a| sum + a);
             Ok(RispExp::Number(first - sum_of_rest))
         }),
+    );
+
+    //Bool functions
+    data.insert(
+        "=".to_string(),
+        RispExp::Func(ensure_tonicity!(|a, b| a == b)),
+    );
+    data.insert(
+        ">".to_string(),
+        RispExp::Func(ensure_tonicity!(|a, b| a > b)),
+    );
+    data.insert(
+        "<".to_string(),
+        RispExp::Func(ensure_tonicity!(|a, b| a < b)),
+    );
+    data.insert(
+        ">=".to_string(),
+        RispExp::Func(ensure_tonicity!(|a, b| a >= b)),
+    );
+    data.insert(
+        "<=".to_string(),
+        RispExp::Func(ensure_tonicity!(|a, b| a <= b)),
     );
 
     RispEnv { data }
@@ -200,7 +242,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use crate::tokenize;
+    use crate::{default_env, parse_and_eval, tokenize, RispExp};
 
     #[test]
     fn tokenize_check() {
@@ -208,5 +250,24 @@ mod tests {
             tokenize("(+ 10 5)".to_string()),
             vec!["(", "+", "10", "5", ")"]
         )
+    }
+
+    #[test]
+    fn eval_check() {
+        let env = &mut default_env();
+        assert_eq!(
+            format!(
+                "{}",
+                parse_and_eval("(+ 10 5 (- 10 3 3))".to_string(), env).unwrap()
+            ),
+            "19"
+        );
+        assert_eq!(
+            format!(
+                "{}",
+                parse_and_eval("(> 6 4 3 1)".to_string(), env).unwrap()
+            ),
+            "true"
+        );
     }
 }
